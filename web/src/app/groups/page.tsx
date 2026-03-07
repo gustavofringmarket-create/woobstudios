@@ -20,13 +20,13 @@ export default async function GroupsPage() {
             <span className="text-xs text-primary-light uppercase tracking-widest font-medium">Groups</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Our Groups</h1>
-          <div className="flex items-center gap-4 mt-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-4">
             <div className="flex items-center gap-2 text-sm text-muted">
-              <span className="text-2xl font-bold text-foreground">{groups.length}</span> groups
+              <span className="text-xl sm:text-2xl font-bold text-foreground">{groups.length}</span> groups
             </div>
             <span className="w-px h-5 bg-border" />
             <div className="flex items-center gap-2 text-sm text-muted">
-              <span className="text-2xl font-bold text-foreground">{formatNumber(totalMembers)}</span> members
+              <span className="text-xl sm:text-2xl font-bold text-foreground">{formatNumber(totalMembers)}</span> members
             </div>
           </div>
         </div>

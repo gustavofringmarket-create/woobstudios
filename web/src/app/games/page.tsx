@@ -21,17 +21,17 @@ export default async function GamesPage() {
             <span className="text-xs text-primary-light uppercase tracking-widest font-medium">Games</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Our Games</h1>
-          <div className="flex items-center gap-4 mt-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-4">
             <div className="flex items-center gap-2 text-sm text-muted">
-              <span className="text-2xl font-bold text-foreground">{games.length}</span> games
+              <span className="text-xl sm:text-2xl font-bold text-foreground">{games.length}</span> games
             </div>
             <span className="w-px h-5 bg-border" />
             <div className="flex items-center gap-2 text-sm text-muted">
-              <span className="text-2xl font-bold text-foreground">{formatNumber(totalVisits)}</span> visits
+              <span className="text-xl sm:text-2xl font-bold text-foreground">{formatNumber(totalVisits)}</span> visits
             </div>
             <span className="w-px h-5 bg-border" />
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-2xl font-bold text-green-400">{formatNumber(totalCCU)}</span>
+              <span className="text-xl sm:text-2xl font-bold text-green-400">{formatNumber(totalCCU)}</span>
               <span className="text-muted">playing</span>
             </div>
           </div>
@@ -48,7 +48,7 @@ export default async function GamesPage() {
               rel="noopener noreferrer"
               className="card rounded-xl overflow-hidden"
             >
-              <div className="relative h-48 bg-surface-light">
+              <div className="relative h-40 sm:h-48 bg-surface-light">
                 {game.thumbnail ? (
                   <Image src={game.thumbnail} alt={game.name} fill className="object-cover" />
                 ) : game.icon ? (

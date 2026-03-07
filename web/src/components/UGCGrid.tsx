@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Image from "next/image";
-import { ShoppingBag, Tag } from "lucide-react";
+import { ShoppingBag, Tag, Gem } from "lucide-react";
 import type { UGCAsset } from "@/lib/roblox";
 
 export default function UGCGrid({ items }: { items: UGCAsset[] }) {
@@ -59,7 +59,12 @@ export default function UGCGrid({ items }: { items: UGCAsset[] }) {
                   <ShoppingBag className="w-10 h-10 text-border" />
                 </div>
               )}
-              {!item.isForSale && (
+              {item.isLimited && (
+                <div className="absolute top-2 left-2 badge bg-amber-500/90 text-white">
+                  <Gem className="w-3 h-3" /> Limited
+                </div>
+              )}
+              {!item.isForSale && !item.isLimited && (
                 <div className="absolute top-2 left-2 badge bg-red-500/90 text-white">
                   Offsale
                 </div>

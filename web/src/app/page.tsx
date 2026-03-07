@@ -7,6 +7,7 @@ import {
   ShoppingBag,
   ArrowRight,
   Layers,
+  Gem,
 } from "lucide-react";
 import { getFounders, getAllGames, getAllUGC, getAllGroups } from "@/lib/data";
 import { formatNumber } from "@/lib/roblox";
@@ -64,7 +65,7 @@ export default async function Home() {
                 href={`https://www.roblox.com/users/${f.user.id}/profile`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="founder-card rounded-2xl px-6 py-5 flex items-center gap-5 w-full sm:w-auto sm:min-w-[300px]"
+                className="founder-card rounded-2xl px-4 sm:px-6 py-4 sm:py-5 flex items-center gap-4 sm:gap-5 w-full sm:w-auto sm:min-w-[300px]"
               >
                 <div className="shrink-0">
                   {f.avatar ? (
@@ -98,7 +99,7 @@ export default async function Home() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-5 gap-4 sm:gap-5 mt-10 animate-fade-up anim-delay-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5 mt-10 animate-fade-up anim-delay-2">
             {[
               { label: "Total Visits", value: formatNumber(totalVisits), color: "text-primary-light" },
               { label: "Playing Now", value: formatNumber(totalCCU), color: "text-green-400" },
@@ -106,9 +107,9 @@ export default async function Home() {
               { label: "UGC Items", value: ugcItems.length.toString(), color: "text-foreground" },
               { label: "Members", value: formatNumber(totalMembers), color: "text-foreground" },
             ].map((s) => (
-              <div key={s.label} className="stat-block rounded-2xl p-6 sm:p-8 text-center">
-                <p className={`text-3xl sm:text-5xl font-bold tracking-tight ${s.color}`}>{s.value}</p>
-                <p className="text-xs sm:text-sm text-muted mt-2.5 uppercase tracking-widest">{s.label}</p>
+              <div key={s.label} className="stat-block rounded-2xl p-4 sm:p-6 lg:p-8 text-center">
+                <p className={`text-2xl sm:text-3xl lg:text-5xl font-bold tracking-tight ${s.color}`}>{s.value}</p>
+                <p className="text-[10px] sm:text-xs lg:text-sm text-muted mt-1.5 sm:mt-2.5 uppercase tracking-widest">{s.label}</p>
               </div>
             ))}
           </div>
@@ -189,7 +190,7 @@ export default async function Home() {
               rel="noopener noreferrer"
               className="card rounded-xl overflow-hidden"
             >
-              <div className="relative h-48 bg-surface-light">
+              <div className="relative h-40 sm:h-48 bg-surface-light">
                 {game.thumbnail ? (
                   <Image src={game.thumbnail} alt={game.name} fill className="object-cover" />
                 ) : game.icon ? (
@@ -260,6 +261,11 @@ export default async function Home() {
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <ShoppingBag className="w-8 h-8 text-border" />
+                  </div>
+                )}
+                {item.isLimited && (
+                  <div className="absolute top-2 left-2 badge bg-amber-500/90 text-white">
+                    <Gem className="w-3 h-3" /> Limited
                   </div>
                 )}
               </div>

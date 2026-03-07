@@ -58,6 +58,7 @@ export interface UGCAsset {
   description: string;
   price: number | null;
   isForSale: boolean;
+  isLimited: boolean;
   thumbnail: string;
   creatorName: string;
   creatorGroupId: number;
@@ -226,18 +227,28 @@ export async function getGameThumbnails(universeIds: number[]): Promise<RobloxTh
 
 export async function getGroupUGCItems(groupId: number): Promise<{ id: number; itemType: string }[]> {
   const items: { id: number; itemType: string }[] = [];
-  let cursor: string | null = "";
+  const seen = new Set<string>();
+  const categories = ["All", "Collectibles", "Accessories"];
 
-  while (cursor !== null) {
-    try {
-      const cursorParam: string = cursor ? `&cursor=${cursor}` : "";
-      const reqUrl: string = `${CATALOG_API}/search/items?category=All&creatorTargetId=${groupId}&creatorType=Group&limit=30&sortType=Relevance${cursorParam}`;
-      const res = await fetch(reqUrl, CACHE_TTL);
-      if (!res.ok) break;
-      const data = await res.json();
-      items.push(...(data.data || []));
-      cursor = data.nextPageCursor || null;
-    } catch { break; }
+  for (const category of categories) {
+    let cursor: string | null = "";
+    while (cursor !== null) {
+      try {
+        const cursorParam: string = cursor ? `&cursor=${cursor}` : "";
+        const reqUrl: string = `${CATALOG_API}/search/items?category=${category}&creatorTargetId=${groupId}&creatorType=Group&limit=30&sortType=Relevance${cursorParam}`;
+        const res = await fetch(reqUrl, CACHE_TTL);
+        if (!res.ok) break;
+        const data = await res.json();
+        for (const item of data.data || []) {
+          const key = `${item.itemType}-${item.id}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            items.push(item);
+          }
+        }
+        cursor = data.nextPageCursor || null;
+      } catch { break; }
+    }
   }
   return items;
 }
@@ -253,6 +264,7 @@ export async function getAssetDetails(assetId: number): Promise<UGCAsset | null>
       description: d.Description || "",
       price: d.PriceInRobux,
       isForSale: d.IsForSale,
+      isLimited: d.IsLimited || d.IsLimitedUnique || d.CollectibleItemId != null,
       thumbnail: "",
       creatorName: d.Creator?.Name || "",
       creatorGroupId: d.Creator?.CreatorTargetId || 0,
@@ -275,6 +287,7 @@ export async function getBundleDetails(bundleIds: number[]): Promise<UGCAsset[]>
       description: (b.description as string) || "",
       price: (b.product as Record<string, unknown>)?.priceInRobux as number || null,
       isForSale: (b.product as Record<string, unknown>)?.isForSale as boolean || false,
+      isLimited: false,
       thumbnail: "",
       creatorName: (b.creator as Record<string, unknown>)?.name as string || "",
       creatorGroupId: (b.creator as Record<string, unknown>)?.id as number || 0,
