@@ -75,6 +75,7 @@ export async function getFounders(): Promise<Founder[]> {
 export interface Contributor {
   user: RobloxUser;
   avatar: string;
+  role: string;
 }
 
 export async function getContributors(): Promise<Contributor[]> {
@@ -87,6 +88,7 @@ export async function getContributors(): Promise<Contributor[]> {
   return CONTRIBUTORS.map((c, i) => ({
     user: users[i] || { id: c.userId, name: "Unknown", displayName: "Unknown", description: "", created: "", hasVerifiedBadge: false },
     avatar: headshots.find((h) => h.targetId === c.userId)?.imageUrl || "",
+    role: c.role,
   }));
 }
 

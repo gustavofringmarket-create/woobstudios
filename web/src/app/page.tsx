@@ -99,42 +99,6 @@ export default async function Home() {
             ))}
           </div>
 
-          {/* Contributors */}
-          {contributors.length > 0 && (
-            <div className="flex items-center justify-center gap-4 mt-8 animate-fade-up anim-delay-1">
-              <span className="text-xs text-muted uppercase tracking-widest">Contributors</span>
-              <div className="flex items-center gap-3">
-                {contributors.map((c) => (
-                  <a
-                    key={c.user.id}
-                    href={`https://www.roblox.com/users/${c.user.id}/profile`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-surface border border-border hover:border-primary/30 transition-all"
-                  >
-                    {c.avatar ? (
-                      <Image
-                        src={c.avatar}
-                        alt={c.user.displayName}
-                        width={32}
-                        height={32}
-                        className="w-8 h-8 rounded-lg object-cover"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 bg-primary/15 rounded-lg flex items-center justify-center text-primary-light font-bold text-sm">
-                        {c.user.displayName[0]}
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-sm font-medium">{c.user.displayName}</p>
-                      <p className="text-[10px] text-muted">@{c.user.name}</p>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5 mt-10 animate-fade-up anim-delay-2">
             {[
@@ -318,6 +282,48 @@ export default async function Home() {
           ))}
         </div>
       </section>
+
+      <div className="divider mx-8" />
+
+      {/* Contributors */}
+      {contributors.length > 0 && (
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+          <div className="text-center mb-10">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Users className="w-4 h-4 text-primary-light" />
+              <span className="text-xs text-primary-light uppercase tracking-widest font-medium">Team</span>
+            </div>
+            <h2 className="section-title">Contributors</h2>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-5 sm:gap-6">
+            {contributors.map((c) => (
+              <a
+                key={c.user.id}
+                href={`https://www.roblox.com/users/${c.user.id}/profile`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative flex flex-col items-center"
+              >
+                <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden ring-2 ring-border group-hover:ring-primary/50 transition-all duration-300 group-hover:scale-110">
+                  {c.avatar ? (
+                    <Image src={c.avatar} alt={c.user.displayName} fill className="object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-primary/15 flex items-center justify-center text-primary-light font-bold text-lg">
+                      {c.user.displayName[0]}
+                    </div>
+                  )}
+                </div>
+                <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-10">
+                  <div className="bg-surface border border-border rounded-lg px-3 py-2 shadow-xl whitespace-nowrap text-center">
+                    <p className="text-xs font-semibold">{c.user.displayName}</p>
+                    <p className="text-[10px] text-primary-light">{c.role}</p>
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
     </>
   );
 }
