@@ -3,6 +3,11 @@ export const FOUNDERS = [
   { userId: 1111392738, discord: "b3rcha", x: "b3rcha" },
 ] as const;
 
+export const CONTRIBUTORS = [
+  { userId: 523346811 },
+  { userId: 1183138155 },
+] as const;
+
 // Groups with games
 export const GAME_GROUPS = [887221955, 924232609] as const;
 

@@ -9,15 +9,16 @@ import {
   Layers,
   Gem,
 } from "lucide-react";
-import { getFounders, getAllGames, getAllUGC, getAllGroups } from "@/lib/data";
+import { getFounders, getContributors, getAllGames, getAllUGC, getAllGroups } from "@/lib/data";
 import { formatNumber } from "@/lib/roblox";
 import VerifiedBadge from "@/components/VerifiedBadge";
 
 export const revalidate = 300;
 
 export default async function Home() {
-  const [founders, games, ugcItems, groups] = await Promise.all([
+  const [founders, contributors, games, ugcItems, groups] = await Promise.all([
     getFounders(),
+    getContributors(),
     getAllGames(),
     getAllUGC(),
     getAllGroups(),
@@ -97,6 +98,42 @@ export default async function Home() {
               </a>
             ))}
           </div>
+
+          {/* Contributors */}
+          {contributors.length > 0 && (
+            <div className="flex items-center justify-center gap-4 mt-8 animate-fade-up anim-delay-1">
+              <span className="text-xs text-muted uppercase tracking-widest">Contributors</span>
+              <div className="flex items-center gap-3">
+                {contributors.map((c) => (
+                  <a
+                    key={c.user.id}
+                    href={`https://www.roblox.com/users/${c.user.id}/profile`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-surface border border-border hover:border-primary/30 transition-all"
+                  >
+                    {c.avatar ? (
+                      <Image
+                        src={c.avatar}
+                        alt={c.user.displayName}
+                        width={32}
+                        height={32}
+                        className="w-8 h-8 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 bg-primary/15 rounded-lg flex items-center justify-center text-primary-light font-bold text-sm">
+                        {c.user.displayName[0]}
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm font-medium">{c.user.displayName}</p>
+                      <p className="text-[10px] text-muted">@{c.user.name}</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5 mt-10 animate-fade-up anim-delay-2">

@@ -18,7 +18,7 @@ import {
   type UGCAsset,
   type RobloxThumbnail,
 } from "./roblox";
-import { FOUNDERS, GAME_GROUPS, UGC_GROUPS, ALL_GROUPS } from "./config";
+import { FOUNDERS, CONTRIBUTORS, GAME_GROUPS, UGC_GROUPS, ALL_GROUPS } from "./config";
 
 export interface Founder {
   user: RobloxUser;
@@ -69,6 +69,24 @@ export async function getFounders(): Promise<Founder[]> {
     avatar: headshots.find((h) => h.targetId === f.userId)?.imageUrl || "",
     discord: f.discord,
     x: f.x,
+  }));
+}
+
+export interface Contributor {
+  user: RobloxUser;
+  avatar: string;
+}
+
+export async function getContributors(): Promise<Contributor[]> {
+  const userIds = CONTRIBUTORS.map((c) => c.userId);
+  const [headshots, ...users] = await Promise.all([
+    getAvatarHeadshots(userIds),
+    ...CONTRIBUTORS.map((c) => getUser(c.userId)),
+  ]);
+
+  return CONTRIBUTORS.map((c, i) => ({
+    user: users[i] || { id: c.userId, name: "Unknown", displayName: "Unknown", description: "", created: "", hasVerifiedBadge: false },
+    avatar: headshots.find((h) => h.targetId === c.userId)?.imageUrl || "",
   }));
 }
 
@@ -152,45 +170,48 @@ export async function getAllGames(): Promise<StudioGame[]> {
 }
 
 export async function getAllUGC(): Promise<UGCAsset[]> {
-  const allItems: UGCAsset[] = [];
+  // Process all groups in parallel
+  const groupResults = await Promise.all(
+    UGC_GROUPS.map(async (groupId) => {
+      const rawItems = await getGroupUGCItems(groupId);
 
-  for (const groupId of UGC_GROUPS) {
-    const rawItems = await getGroupUGCItems(groupId);
+      const assets = rawItems.filter((i) => i.itemType === "Asset");
+      const bundles = rawItems.filter((i) => i.itemType === "Bundle");
 
-    const assets = rawItems.filter((i) => i.itemType === "Asset");
-    const bundles = rawItems.filter((i) => i.itemType === "Bundle");
-
-    // Fetch asset details
-    const assetDetails = await Promise.all(
-      assets.map((a) => getAssetDetails(a.id))
-    );
-    const validAssets = assetDetails.filter((a): a is UGCAsset => a !== null);
-
-    // Fetch asset thumbnails
-    if (validAssets.length > 0) {
-      const assetThumbs = await getAssetThumbnails(validAssets.map((a) => a.id));
-      for (const asset of validAssets) {
-        const thumb = assetThumbs.find((t) => t.targetId === asset.id);
-        if (thumb?.state === "Completed") asset.thumbnail = thumb.imageUrl;
+      // Fetch asset details in batches of 10 to avoid rate limiting
+      const validAssets: UGCAsset[] = [];
+      for (let i = 0; i < assets.length; i += 10) {
+        const batch = assets.slice(i, i + 10);
+        const details = await Promise.all(batch.map((a) => getAssetDetails(a.id)));
+        validAssets.push(...details.filter((a): a is UGCAsset => a !== null));
       }
-    }
 
-    // Fetch bundle details
-    const bundleDetails = await getBundleDetails(bundles.map((b) => b.id));
-
-    // Fetch bundle thumbnails
-    if (bundleDetails.length > 0) {
-      const bundleThumbs = await getBundleThumbnails(bundleDetails.map((b) => b.id));
-      for (const bundle of bundleDetails) {
-        const thumb = bundleThumbs.find((t) => t.targetId === bundle.id);
-        if (thumb?.state === "Completed") bundle.thumbnail = thumb.imageUrl;
+      // Fetch asset thumbnails
+      if (validAssets.length > 0) {
+        const assetThumbs = await getAssetThumbnails(validAssets.map((a) => a.id));
+        for (const asset of validAssets) {
+          const thumb = assetThumbs.find((t) => t.targetId === asset.id);
+          if (thumb?.state === "Completed") asset.thumbnail = thumb.imageUrl;
+        }
       }
-    }
 
-    allItems.push(...validAssets, ...bundleDetails);
-  }
+      // Fetch bundle details
+      const bundleDetails = await getBundleDetails(bundles.map((b) => b.id));
 
-  return allItems;
+      // Fetch bundle thumbnails
+      if (bundleDetails.length > 0) {
+        const bundleThumbs = await getBundleThumbnails(bundleDetails.map((b) => b.id));
+        for (const bundle of bundleDetails) {
+          const thumb = bundleThumbs.find((t) => t.targetId === bundle.id);
+          if (thumb?.state === "Completed") bundle.thumbnail = thumb.imageUrl;
+        }
+      }
+
+      return [...validAssets, ...bundleDetails];
+    })
+  );
+
+  return groupResults.flat();
 }
 
 export async function getStudioStats(): Promise<StudioStats> {

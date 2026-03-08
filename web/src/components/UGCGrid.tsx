@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
-import { ShoppingBag, Tag, Gem } from "lucide-react";
+import { ShoppingBag, Tag, Gem, Loader2 } from "lucide-react";
 import type { UGCAsset } from "@/lib/roblox";
+
+const ITEMS_PER_PAGE = 20;
 
 export default function UGCGrid({ items }: { items: UGCAsset[] }) {
   const [activeCategory, setActiveCategory] = useState<string>("All");
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+  const loaderRef = useRef<HTMLDivElement>(null);
 
   const categories = useMemo(() => {
     const cats = new Set(items.map((i) => i.category));
@@ -16,6 +20,36 @@ export default function UGCGrid({ items }: { items: UGCAsset[] }) {
   const filtered = activeCategory === "All"
     ? items
     : items.filter((i) => i.category === activeCategory);
+
+  // Reset visible count when category changes
+  useEffect(() => {
+    setVisibleCount(ITEMS_PER_PAGE);
+  }, [activeCategory]);
+
+  const hasMore = visibleCount < filtered.length;
+
+  const loadMore = useCallback(() => {
+    if (hasMore) {
+      setVisibleCount((prev) => Math.min(prev + ITEMS_PER_PAGE, filtered.length));
+    }
+  }, [hasMore, filtered.length]);
+
+  // Intersection observer for infinite scroll
+  useEffect(() => {
+    const el = loaderRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore();
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadMore]);
+
+  const visible = filtered.slice(0, visibleCount);
 
   return (
     <>
@@ -41,7 +75,7 @@ export default function UGCGrid({ items }: { items: UGCAsset[] }) {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {filtered.map((item) => (
+        {visible.map((item) => (
           <a
             key={`${item.itemType}-${item.id}`}
             href={item.itemType === "Bundle"
@@ -90,6 +124,13 @@ export default function UGCGrid({ items }: { items: UGCAsset[] }) {
           </a>
         ))}
       </div>
+
+      {/* Infinite scroll loader */}
+      {hasMore && (
+        <div ref={loaderRef} className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 text-muted animate-spin" />
+        </div>
+      )}
 
       {filtered.length === 0 && (
         <div className="text-center py-24">
