@@ -12,6 +12,7 @@ import {
 import { getFounders, getContributors, getAllGames, getAllUGC, getAllGroups } from "@/lib/data";
 import { formatNumber } from "@/lib/roblox";
 import VerifiedBadge from "@/components/VerifiedBadge";
+import AnimatedStats from "@/components/AnimatedStats";
 
 export const revalidate = 300;
 
@@ -100,20 +101,13 @@ export default async function Home() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5 mt-10 animate-fade-up anim-delay-2">
-            {[
-              { label: "Total Visits", value: formatNumber(totalVisits), color: "text-primary-light" },
-              { label: "Playing Now", value: formatNumber(totalCCU), color: "text-green-400" },
-              { label: "Games", value: games.length.toString(), color: "text-foreground" },
-              { label: "UGC Items", value: ugcItems.length.toString(), color: "text-foreground" },
-              { label: "Members", value: formatNumber(totalMembers), color: "text-foreground" },
-            ].map((s) => (
-              <div key={s.label} className="stat-block rounded-2xl p-4 sm:p-6 lg:p-8 text-center">
-                <p className={`text-2xl sm:text-3xl lg:text-5xl font-bold tracking-tight ${s.color}`}>{s.value}</p>
-                <p className="text-[10px] sm:text-xs lg:text-sm text-muted mt-1.5 sm:mt-2.5 uppercase tracking-widest">{s.label}</p>
-              </div>
-            ))}
-          </div>
+          <AnimatedStats stats={[
+            { label: "Total Visits", value: formatNumber(totalVisits), rawValue: totalVisits, color: "text-primary-light" },
+            { label: "Playing Now", value: formatNumber(totalCCU), rawValue: totalCCU, color: "text-green-400" },
+            { label: "Games", value: games.length.toString(), rawValue: games.length, color: "text-foreground" },
+            { label: "UGC Items", value: ugcItems.length.toString(), rawValue: ugcItems.length, color: "text-foreground" },
+            { label: "Members", value: formatNumber(totalMembers), rawValue: totalMembers, color: "text-foreground" },
+          ]} />
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 h-px bg-border" />
@@ -287,7 +281,7 @@ export default async function Home() {
 
       {/* Contributors */}
       {contributors.length > 0 && (
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+        <section id="contributors" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 scroll-mt-16">
           <div className="text-center mb-10">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Users className="w-4 h-4 text-primary-light" />

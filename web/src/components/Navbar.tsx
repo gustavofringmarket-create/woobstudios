@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: "/games", label: "Games" },
   { href: "/ugc", label: "UGC" },
   { href: "/groups", label: "Groups" },
+  { href: "/#contributors", label: "Contributors" },
 ];
 
 export default function Navbar() {
@@ -25,6 +26,11 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => setIsOpen(false), [pathname]);
+
+  const isActive = (href: string) => {
+    if (href.startsWith("/#")) return false;
+    return pathname === href;
+  };
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-background/90 backdrop-blur-lg border-b border-border" : "bg-transparent"}`}>
@@ -41,7 +47,7 @@ export default function Navbar() {
                 key={link.href}
                 href={link.href}
                 className={`relative px-5 py-2.5 text-base font-medium rounded-lg transition-all duration-200 ${
-                  pathname === link.href
+                  isActive(link.href)
                     ? "text-primary-light bg-primary/10"
                     : "text-muted hover:text-foreground hover:bg-surface-light"
                 }`}
@@ -64,7 +70,7 @@ export default function Navbar() {
               key={link.href}
               href={link.href}
               className={`block px-4 py-2.5 text-sm rounded-lg transition-all ${
-                pathname === link.href
+                isActive(link.href)
                   ? "text-primary-light bg-primary/10 font-medium"
                   : "text-muted hover:text-foreground hover:bg-surface-light"
               }`}
