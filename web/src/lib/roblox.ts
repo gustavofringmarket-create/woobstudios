@@ -228,18 +228,30 @@ export async function getGameThumbnails(universeIds: number[]): Promise<RobloxTh
 export async function getGroupUGCItems(groupId: number): Promise<{ id: number; itemType: string }[]> {
   const items: { id: number; itemType: string }[] = [];
   const seen = new Set<string>();
-  const categories = ["All", "Collectibles", "Accessories"];
 
-  for (const category of categories) {
+  // Search with multiple sort types across key categories to ensure complete coverage
+  const searches = [
+    { category: "All", sortType: "Relevance" },
+    { category: "All", sortType: "3" },          // Recently created
+    { category: "All", sortType: "1" },          // Price low to high
+    { category: "Collectibles", sortType: "Relevance" },
+    { category: "Accessories", sortType: "Relevance" },
+    { category: "BodyParts", sortType: "Relevance" },
+    { category: "Clothing", sortType: "Relevance" },
+    { category: "AvatarAnimations", sortType: "Relevance" },
+  ];
+
+  for (const search of searches) {
     let cursor: string | null = "";
     while (cursor !== null) {
       try {
         const cursorParam: string = cursor ? `&cursor=${cursor}` : "";
-        const reqUrl: string = `${CATALOG_API}/search/items?category=${category}&creatorTargetId=${groupId}&creatorType=Group&limit=30&sortType=Relevance${cursorParam}`;
+        const reqUrl: string = `${CATALOG_API}/search/items?category=${search.category}&creatorTargetId=${groupId}&creatorType=Group&limit=30&sortType=${search.sortType}${cursorParam}`;
         const res = await fetch(reqUrl, CACHE_TTL);
         if (!res.ok) break;
         const data = await res.json();
-        for (const item of data.data || []) {
+        if (!data.data || data.data.length === 0) break;
+        for (const item of data.data) {
           const key = `${item.itemType}-${item.id}`;
           if (!seen.has(key)) {
             seen.add(key);
@@ -253,25 +265,39 @@ export async function getGroupUGCItems(groupId: number): Promise<{ id: number; i
   return items;
 }
 
-export async function getAssetDetails(assetId: number): Promise<UGCAsset | null> {
-  try {
-    const res = await fetch(`${ECONOMY_API}/assets/${assetId}/details`, CACHE_TTL);
-    if (!res.ok) return null;
-    const d = await res.json();
-    return {
-      id: d.AssetId,
-      name: d.Name,
-      description: d.Description || "",
-      price: d.PriceInRobux,
-      isForSale: d.IsForSale,
-      isLimited: d.IsLimited || d.IsLimitedUnique || d.CollectibleItemId != null,
-      thumbnail: "",
-      creatorName: d.Creator?.Name || "",
-      creatorGroupId: d.Creator?.CreatorTargetId || 0,
-      itemType: "Asset",
-      category: ASSET_TYPE_CATEGORIES[d.AssetTypeId as number] || "Other",
-    };
-  } catch { return null; }
+export async function getAssetDetails(assetId: number, retries = 2): Promise<UGCAsset | null> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(`${ECONOMY_API}/assets/${assetId}/details`, CACHE_TTL);
+      if (res.status === 429 && attempt < retries) {
+        // Rate limited, wait and retry
+        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+      if (!res.ok) return null;
+      const d = await res.json();
+      return {
+        id: d.AssetId,
+        name: d.Name,
+        description: d.Description || "",
+        price: d.PriceInRobux,
+        isForSale: d.IsForSale,
+        isLimited: d.IsLimited || d.IsLimitedUnique || d.CollectibleItemId != null,
+        thumbnail: "",
+        creatorName: d.Creator?.Name || "",
+        creatorGroupId: d.Creator?.CreatorTargetId || 0,
+        itemType: "Asset",
+        category: ASSET_TYPE_CATEGORIES[d.AssetTypeId as number] || "Other",
+      };
+    } catch {
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+        continue;
+      }
+      return null;
+    }
+  }
+  return null;
 }
 
 export async function getBundleDetails(bundleIds: number[]): Promise<UGCAsset[]> {
@@ -299,16 +325,22 @@ export async function getBundleDetails(bundleIds: number[]): Promise<UGCAsset[]>
 
 export async function getAssetThumbnails(assetIds: number[]): Promise<RobloxThumbnail[]> {
   if (assetIds.length === 0) return [];
-  try {
-    const ids = assetIds.join(",");
-    const res = await fetch(
-      `${THUMBNAILS_API}/assets?assetIds=${ids}&size=420x420&format=Png`,
-      CACHE_TTL
-    );
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.data || [];
-  } catch { return []; }
+  const results: RobloxThumbnail[] = [];
+  // Batch in groups of 50 to avoid API limits
+  for (let i = 0; i < assetIds.length; i += 50) {
+    const batch = assetIds.slice(i, i + 50);
+    try {
+      const ids = batch.join(",");
+      const res = await fetch(
+        `${THUMBNAILS_API}/assets?assetIds=${ids}&size=420x420&format=Png`,
+        CACHE_TTL
+      );
+      if (!res.ok) continue;
+      const data = await res.json();
+      results.push(...(data.data || []));
+    } catch { continue; }
+  }
+  return results;
 }
 
 export async function getBundleThumbnails(bundleIds: number[]): Promise<RobloxThumbnail[]> {
