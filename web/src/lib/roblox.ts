@@ -225,8 +225,8 @@ export async function getGameThumbnails(universeIds: number[]): Promise<RobloxTh
   } catch { return []; }
 }
 
-export async function getGroupUGCItems(groupId: number): Promise<{ id: number; itemType: string }[]> {
-  const items: { id: number; itemType: string }[] = [];
+export async function getGroupUGCItems(groupId: number): Promise<UGCAsset[]> {
+  const items: UGCAsset[] = [];
   const seen = new Set<string>();
 
   // Search with multiple sort types across key categories to ensure complete coverage
@@ -246,16 +246,28 @@ export async function getGroupUGCItems(groupId: number): Promise<{ id: number; i
     while (cursor !== null) {
       try {
         const cursorParam: string = cursor ? `&cursor=${cursor}` : "";
-        const reqUrl: string = `${CATALOG_API}/search/items?category=${search.category}&creatorTargetId=${groupId}&creatorType=Group&limit=30&sortType=${search.sortType}${cursorParam}`;
+        const reqUrl: string = `${CATALOG_API}/search/items/details?category=${search.category}&creatorTargetId=${groupId}&creatorType=Group&limit=30&sortType=${search.sortType}${cursorParam}`;
         const res = await fetch(reqUrl, CACHE_TTL);
         if (!res.ok) break;
         const data = await res.json();
         if (!data.data || data.data.length === 0) break;
-        for (const item of data.data) {
-          const key = `${item.itemType}-${item.id}`;
+        for (const d of data.data) {
+          const key = `${d.itemType}-${d.id}`;
           if (!seen.has(key)) {
             seen.add(key);
-            items.push(item);
+            items.push({
+              id: d.id,
+              name: d.name || "",
+              description: d.description || "",
+              price: d.price ?? d.lowestPrice ?? null,
+              isForSale: d.priceStatus === "Free" || d.price != null || d.lowestPrice != null,
+              isLimited: d.collectibleItemId != null || d.unitsAvailableForConsumption != null,
+              thumbnail: "",
+              creatorName: d.creatorName || "",
+              creatorGroupId: d.creatorTargetId || 0,
+              itemType: d.itemType === "Bundle" ? "Bundle" : "Asset",
+              category: d.itemType === "Bundle" ? "Bundle" : (ASSET_TYPE_CATEGORIES[d.assetType as number] || "Other"),
+            });
           }
         }
         cursor = data.nextPageCursor || null;
@@ -270,7 +282,6 @@ export async function getAssetDetails(assetId: number, retries = 2): Promise<UGC
     try {
       const res = await fetch(`${ECONOMY_API}/assets/${assetId}/details`, CACHE_TTL);
       if (res.status === 429 && attempt < retries) {
-        // Rate limited, wait and retry
         await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
         continue;
       }
@@ -298,6 +309,57 @@ export async function getAssetDetails(assetId: number, retries = 2): Promise<UGC
     }
   }
   return null;
+}
+
+// Bulk fetch item details via catalog API (more reliable than economy API)
+export async function getCatalogItemDetails(
+  items: { id: number; itemType: string }[]
+): Promise<UGCAsset[]> {
+  if (items.length === 0) return [];
+  const results: UGCAsset[] = [];
+
+  // Batch in groups of 30 (API limit)
+  for (let i = 0; i < items.length; i += 30) {
+    const batch = items.slice(i, i + 30);
+    try {
+      const body = {
+        items: batch.map((item) => ({
+          itemType: item.itemType,
+          id: item.id,
+        })),
+      };
+      const res = await fetch("https://catalog.roblox.com/v1/catalog/items/details", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        next: { revalidate: 300 },
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      for (const d of data.data || []) {
+        results.push({
+          id: d.id,
+          name: d.name || "",
+          description: d.description || "",
+          price: d.price ?? d.lowestPrice ?? null,
+          isForSale: d.priceStatus === "Free" || d.price != null || d.lowestPrice != null,
+          isLimited: d.collectibleItemId != null || d.isLimited === true || d.isLimitedUnique === true,
+          thumbnail: "",
+          creatorName: d.creatorName || "",
+          creatorGroupId: d.creatorTargetId || 0,
+          itemType: d.itemType === "Bundle" ? "Bundle" : "Asset",
+          category: d.itemType === "Bundle" ? "Bundle" : (ASSET_TYPE_CATEGORIES[d.assetType as number] || "Other"),
+        });
+      }
+    } catch { continue; }
+
+    // Small delay between batches
+    if (i + 30 < items.length) {
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  }
+
+  return results;
 }
 
 export async function getBundleDetails(bundleIds: number[]): Promise<UGCAsset[]> {

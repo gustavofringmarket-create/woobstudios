@@ -8,8 +8,6 @@ import {
   getGameThumbnails,
   getGroupIcons,
   getGroupUGCItems,
-  getAssetDetails,
-  getBundleDetails,
   getAssetThumbnails,
   getBundleThumbnails,
   type RobloxUser,
@@ -175,46 +173,34 @@ export async function getAllUGC(): Promise<UGCAsset[]> {
   const allItems: UGCAsset[] = [];
 
   // Process groups sequentially to avoid rate limiting
+  // getGroupUGCItems now returns full UGCAsset objects via catalog search/details
   for (const groupId of UGC_GROUPS) {
-    const rawItems = await getGroupUGCItems(groupId);
+    const items = await getGroupUGCItems(groupId);
+    if (items.length === 0) continue;
 
-    const assets = rawItems.filter((i) => i.itemType === "Asset");
-    const bundles = rawItems.filter((i) => i.itemType === "Bundle");
+    // Separate assets and bundles for thumbnail fetching
+    const assets = items.filter((i) => i.itemType === "Asset");
+    const bundles = items.filter((i) => i.itemType === "Bundle");
 
-    // Fetch asset details in small batches with delay
-    const validAssets: UGCAsset[] = [];
-    for (let i = 0; i < assets.length; i += 5) {
-      const batch = assets.slice(i, i + 5);
-      const details = await Promise.all(batch.map((a) => getAssetDetails(a.id)));
-      validAssets.push(...details.filter((a): a is UGCAsset => a !== null));
-      // Small delay between batches to avoid rate limiting
-      if (i + 5 < assets.length) {
-        await new Promise((r) => setTimeout(r, 200));
-      }
-    }
-
-    // Fetch asset thumbnails (already batched in groups of 50)
-    if (validAssets.length > 0) {
-      const assetThumbs = await getAssetThumbnails(validAssets.map((a) => a.id));
-      for (const asset of validAssets) {
+    // Fetch asset thumbnails (batched in groups of 50)
+    if (assets.length > 0) {
+      const assetThumbs = await getAssetThumbnails(assets.map((a) => a.id));
+      for (const asset of assets) {
         const thumb = assetThumbs.find((t) => t.targetId === asset.id);
         if (thumb?.state === "Completed") asset.thumbnail = thumb.imageUrl;
       }
     }
 
-    // Fetch bundle details
-    const bundleDetails = await getBundleDetails(bundles.map((b) => b.id));
-
     // Fetch bundle thumbnails
-    if (bundleDetails.length > 0) {
-      const bundleThumbs = await getBundleThumbnails(bundleDetails.map((b) => b.id));
-      for (const bundle of bundleDetails) {
+    if (bundles.length > 0) {
+      const bundleThumbs = await getBundleThumbnails(bundles.map((b) => b.id));
+      for (const bundle of bundles) {
         const thumb = bundleThumbs.find((t) => t.targetId === bundle.id);
         if (thumb?.state === "Completed") bundle.thumbnail = thumb.imageUrl;
       }
     }
 
-    allItems.push(...validAssets, ...bundleDetails);
+    allItems.push(...items);
   }
 
   return allItems;
