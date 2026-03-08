@@ -19,6 +19,7 @@ export const CONTRIBUTORS = [
   { userId: 7306763620, role: "My Guy" },
   { userId: 4652794707, role: "Tester" },
   { userId: 1981965218, role: "Tester" },
+  { userId: 5564441632, role: "Scripter" },
 ] as const;
 
 // Groups with games
