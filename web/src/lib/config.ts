@@ -22,6 +22,25 @@ export const CONTRIBUTORS = [
   { userId: 5564441632, role: "Scripter" },
 ] as const;
 
+// Projects / websites built by the studio
+export interface Project {
+  name: string;
+  description: string;
+  url: string;
+  tags: string[];
+  icon: string; // emoji or path
+}
+
+export const PROJECTS: Project[] = [
+  {
+    name: "RoGraphics",
+    description: "AI-powered Roblox UI generator. Describe any game UI and get a production-ready .rbxmx file with textures, hover effects, and animations.",
+    url: "https://rographics.com",
+    tags: ["AI", "Roblox", "UI Generator", "SaaS"],
+    icon: "🎨",
+  },
+];
+
 // Groups with games
 export const GAME_GROUPS = [887221955, 924232609] as const;
 
